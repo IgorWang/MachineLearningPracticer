@@ -7,7 +7,7 @@ __author__ = 'igor'
 1.inference() - Builds the model as far as is required for running the network
 forward to make predictions.
 2.loss() -Adds to the inference model the layers required to generate loss
-3.training() - dds to the loss model the Ops required to generate and
+3.training() - Adds to the loss model the Ops required to generate and
 apply gradients.
 
 """
@@ -18,19 +18,19 @@ import math
 import tensorflow.python.platform
 import tensorflow as tf
 
-
 # THE MNIST dataset has 10 classes
 NUM_CLASSES = 10
 
 # MNIST 的图像是28×28 pixedls
-IMAGE_SIZE = 10
-IMAGE_PIEXELS = IMAGE_SIZE * IMAGE_SIZE
+IMAGE_SIZE = 28
+# 特征的维度
+IMAGE_PIXELS = IMAGE_SIZE * IMAGE_SIZE
 
 
 def inference(images, hidden1_units, hidden2_units):
     '''
     构建 MNIST model,向前传播
-    :param images: Image placeholder
+    :param images: Image placeholder,输入
     :param hidden1_units: 第一个隐藏层的大小
     :param hidden2_units: 第二个隐藏层的大小
     :return:
@@ -40,9 +40,9 @@ def inference(images, hidden1_units, hidden2_units):
     # Hidden 1
     with tf.name_scope("hidden1"):
         weights = tf.Variable(  # 输入层到输出层的weights
-                                tf.truncated_normal([IMAGE_PIEXELS, hidden1_units],
-                                                    stddev=1.0 / math.sqrt(float(IMAGE_PIEXELS)))
-                                , name="weights")
+            tf.truncated_normal([IMAGE_PIXELS, hidden1_units],
+                                stddev=1.0 / math.sqrt(float(IMAGE_PIXELS))),
+            name="weights")
         biases = tf.Variable(
             tf.zeros([hidden1_units]),
             name='biases'
@@ -52,9 +52,8 @@ def inference(images, hidden1_units, hidden2_units):
     with tf.name_scope('hidden2'):
         weights = tf.Variable(
             tf.truncated_normal([hidden1_units, hidden2_units],
-                                stddev=1.0 // math.sqrt(float(hidden1_units)),
-                                name='weights')
-        )
+                                stddev=1.0 / math.sqrt(float(hidden1_units))),
+            name='weights')
         biases = tf.Variable(tf.zeros([hidden2_units]),
                              name='biases')
         hidden2 = tf.nn.relu(tf.matmul(hidden1, weights) + biases)
@@ -62,9 +61,8 @@ def inference(images, hidden1_units, hidden2_units):
     with tf.name_scope('soft_max_linear'):
         weights = tf.Variable(
             tf.truncated_normal([hidden2_units, NUM_CLASSES],
-                                stddev=1.0 / math.sqrt(float(hidden2_units)),
-                                name='weights')
-        )
+                                stddev=1.0 / math.sqrt(float(hidden2_units))),
+            name='weights')
         biases = tf.Variable(tf.zeros([NUM_CLASSES]),
                              name='biases')
         logits = tf.matmul(hidden2, weights) + biases  # 激活层是横等函数
@@ -79,7 +77,7 @@ def loss(logits, labels):
     :param labels: Labels tensor,int32-[batch_size]
     :return:Loss tensor
     '''
-    # 用one-hot的方式对labels_placeholder进行编码P
+    # 用one-hot的方式对labels_placeholder进行编码
     batch_size = tf.size(labels)
     labels = tf.expand_dims(labels, 1)
     indices = tf.expand_dims(tf.range(0, batch_size, 1), 1)
@@ -89,7 +87,7 @@ def loss(logits, labels):
     cross_entropy = tf.nn.softmax_cross_entropy_with_logits(logits,
                                                             one_hot_labels,
                                                             name='xentropy')
-    loss = tf.reduce_mean(cross_entropy, 'xentropy_mean')
+    loss = tf.reduce_mean(cross_entropy, name='xentropy_mean')
     return loss
 
 
@@ -109,8 +107,7 @@ def training(loss, learning_rate):
 
 
 def evalution(logits, labels):
-    correct = tf.nn.in_top_k(logits.labels, 1)
-    return tf.reduce_sum(tf.cast(correct, tf.int32))
+    correct = tf.nn.in_top_k(logits, labels, 1)
     return tf.reduce_sum(tf.cast(correct, tf.int32))
 
 
