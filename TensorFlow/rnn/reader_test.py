@@ -32,6 +32,7 @@ class PtbReaderTest(tf.test.TestCase):
         batch_size = 3
         num_steps = 2
         output = list(reader.ptb_iterator(raw_data, batch_size, num_steps))
+        print(output)
         self.assertEqual(len(output), 2)
         o1, o2 = (output[0], output[1])
         self.assertEqual(o1[0].shape, (batch_size, num_steps))

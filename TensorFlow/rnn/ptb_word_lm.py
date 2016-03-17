@@ -15,18 +15,6 @@
 
 """Example / benchmark for building a PTB LSTM model.
 
-Trains the model described in:
-(Zaremba, et. al.) Recurrent Neural Network Regularization
-http://arxiv.org/abs/1409.2329
-
-There are 3 supported model configurations:
-===========================================
-| config | epochs | train | valid  | My
-===========================================
-| small  | 13     | 37.99 | 121.39 | 115.91
-| medium | 39     | 48.45 |  86.16 |  82.07
-| large  | 55     | 37.87 |  82.62 |  78.29
-The exact results may vary depending on the random initialization.
 
 The hyperparameters used in the model:
 - init_scale - the initial scale of the weights
@@ -65,10 +53,16 @@ class PTBModel(object):
     """The PTB model."""
 
     def __init__(self, is_training, config):
-        self.batch_size = batch_size = config.batch_size
-        self.num_steps = num_steps = config.num_steps
-        size = config.hidden_size
-        vocab_size = config.vocab_size
+        '''
+        初始化模型
+        :param is_training:是否是训练
+        :param config:参数的配置
+        :return:
+        '''
+        self.batch_size = batch_size = config.batch_size  # batch_size
+        self.num_steps = num_steps = config.num_steps  # 序列的长度
+        size = config.hidden_size  # 隐藏层的大小
+        vocab_size = config.vocab_size  # 词典的大小
 
         self._input_data = tf.placeholder(tf.int32, [batch_size, num_steps])
         self._targets = tf.placeholder(tf.int32, [batch_size, num_steps])
@@ -76,20 +70,21 @@ class PTBModel(object):
         # Slightly better results can be obtained with forget gate biases
         # initialized to 1 but the hyperparameters of the model would need to be
         # different than reported in the paper.
-        lstm_cell = tf.nn.rnn_cell.BasicLSTMCell(size, forget_bias=0.0)
-        if is_training and config.keep_prob < 1:
+        lstm_cell = tf.nn.rnn_cell.BasicLSTMCell(size, forget_bias=0.0)  # LSTMCell 一个基本的LSTMcell
+        if is_training and config.keep_prob < 1:  # 如果是训练,dropout正则化,防止过拟合
             lstm_cell = tf.nn.rnn_cell.DropoutWrapper(
                 lstm_cell, output_keep_prob=config.keep_prob)
-        cell = tf.nn.rnn_cell.MultiRNNCell([lstm_cell] * config.num_layers)
+        cell = tf.nn.rnn_cell.MultiRNNCell([lstm_cell] * config.num_layers)  # 普通的RNN,每一层都是一个LSTMcell
 
-        self._initial_state = cell.zero_state(batch_size, tf.float32)
+        self._initial_state = cell.zero_state(batch_size, tf.float32)  # 初始状态 s_0
 
         with tf.device("/cpu:0"):
-            embedding = tf.get_variable("embedding", [vocab_size, size])
+            embedding = tf.get_variable("embedding", [vocab_size, size])  # 创建命名为embedding的Variable
+            # 根据输入向量的id在embedding中查找对应的向量,inputs是一个矩阵,一行就是一个词的向量表示
             inputs = tf.nn.embedding_lookup(embedding, self._input_data)
 
         if is_training and config.keep_prob < 1:
-            inputs = tf.nn.dropout(inputs, config.keep_prob)
+            inputs = tf.nn.dropout(inputs, config.keep_prob)  # 如果是训练则droupout
 
         # Simplified version of tensorflow.models.rnn.rnn.py's rnn().
         # This builds an unrolled LSTM for tutorial purposes only.
@@ -104,16 +99,17 @@ class PTBModel(object):
         outputs = []
         state = self._initial_state
         with tf.variable_scope("RNN"):
-            for time_step in range(num_steps):
-                if time_step > 0: tf.get_variable_scope().reuse_variables()
-                (cell_output, state) = cell(inputs[:, time_step, :], state)
-                outputs.append(cell_output)
+            for time_step in range(num_steps):  # unroll
+                if time_step > 0:
+                    tf.get_variable_scope().reuse_variables()  # 获得当前命名空间下的变量
+                (cell_output, state) = cell(inputs[:, time_step, :], state)  # 取出一个序列，相当于一个x
+                outputs.append(cell_output)  # 输出的序列
 
-        output = tf.reshape(tf.concat(1, outputs), [-1, size])
-        softmax_w = tf.get_variable("softmax_w", [size, vocab_size])
-        softmax_b = tf.get_variable("softmax_b", [vocab_size])
-        logits = tf.matmul(output, softmax_w) + softmax_b
-        loss = tf.nn.seq2seq.sequence_loss_by_example(
+        output = tf.reshape(tf.concat(1, outputs), [-1, size])  # 将输出转换为[[size-D],[size-D]...]
+        softmax_w = tf.get_variable("softmax_w", [size, vocab_size])  # 输出层的权值
+        softmax_b = tf.get_variable("softmax_b", [vocab_size])  # 输出层的bias
+        logits = tf.matmul(output, softmax_w) + softmax_b  # logits
+        loss = tf.nn.seq2seq.sequence_loss_by_example(  # 损失
             [logits],
             [tf.reshape(self._targets, [-1])],
             [tf.ones([batch_size * num_steps])])
@@ -127,8 +123,8 @@ class PTBModel(object):
         tvars = tf.trainable_variables()
         grads, _ = tf.clip_by_global_norm(tf.gradients(cost, tvars),
                                           config.max_grad_norm)
-        optimizer = tf.train.GradientDescentOptimizer(self.lr)
-        self._train_op = optimizer.apply_gradients(zip(grads, tvars))
+        optimizer = tf.train.GradientDescentOptimizer(self.lr)  # 梯度下降
+        self._train_op = optimizer.apply_gradients(zip(grads, tvars))  # 更新
 
     def assign_lr(self, session, lr_value):
         session.run(tf.assign(self.lr, lr_value))
