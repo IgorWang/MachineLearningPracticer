@@ -231,7 +231,7 @@ def run_epoch(session, m, data, eval_op, verbose=False):
     state = m.initial_state.eval()
     for step, (x, y) in enumerate(reader.ptb_iterator(data, m.batch_size,
                                                       m.num_steps)):
-        cost, state, _ = session.run([m.cost, m.final_state, eval_op],
+        cost, state, _ = session.run([m.cost, m.final_state,    eval_op],
                                      {m.input_data: x,
                                       m.targets: y,
                                       m.initial_state: state})
@@ -277,9 +277,9 @@ def main(_):
                                                     config.init_scale)
         with tf.variable_scope("model", reuse=None, initializer=initializer):
             m = PTBModel(is_training=True, config=config)
-        with tf.variable_scope("model", reuse=True, initializer=initializer):
-            mvalid = PTBModel(is_training=False, config=config)
-            mMy = PTBModel(is_training=False, config=eval_config)
+        # with tf.variable_scope("model", reuse=True, initializer=initializer):
+        #     mvalid = PTBModel(is_training=False, config=config)
+        #     mMy = PTBModel(is_training=False, config=eval_config)
 
         tf.initialize_all_variables().run()
 
@@ -290,12 +290,12 @@ def main(_):
             print("Epoch: %d Learning rate: %.3f" % (i + 1, session.run(m.lr)))
             train_perplexity = run_epoch(session, m, train_data, m.train_op,
                                          verbose=True)
-            print("Epoch: %d Train Perplexity: %.3f" % (i + 1, train_perplexity))
-            valid_perplexity = run_epoch(session, mvalid, valid_data, tf.no_op())
-            print("Epoch: %d Valid Perplexity: %.3f" % (i + 1, valid_perplexity))
-
-        My_perplexity = run_epoch(session, mMy, My_data, tf.no_op())
-        print("My Perplexity: %.3f" % My_perplexity)
+            # print("Epoch: %d Train Perplexity: %.3f" % (i + 1, train_perplexity))
+            # valid_perplexity = run_epoch(session, mvalid, valid_data, tf.no_op())
+            # print("Epoch: %d Valid Perplexity: %.3f" % (i + 1, valid_perplexity))
+            #
+            # My_perplexity = run_epoch(session, mMy, My_data, tf.no_op())
+            # print("My Perplexity: %.3f" % My_perplexity)
 
 
 if __name__ == "__main__":

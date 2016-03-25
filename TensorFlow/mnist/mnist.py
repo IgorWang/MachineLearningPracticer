@@ -9,7 +9,6 @@ forward to make predictions.
 2.loss() -Adds to the inference model the layers required to generate loss
 3.training() - Adds to the loss model the Ops required to generate and
 apply gradients.
-
 """
 
 import os.path
