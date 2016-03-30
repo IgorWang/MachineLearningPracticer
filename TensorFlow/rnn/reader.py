@@ -85,7 +85,12 @@ def ptb_iterator(raw_data, batch_size, num_steps):
         yield (x, y)
 
 
-# if __name__ == '__main__':
-#     path = 'data/'
-#     t, va_, te_, length = ptb_raw_data(path)
-#     print(length)
+if __name__ == '__main__':
+    path = 'data/'
+    t, va_, te_, length = ptb_raw_data(path)
+    print(length)
+    for (x,y) in ptb_iterator(t,10,5):
+        print(x)
+
+        print(y)
+        print('_______________')

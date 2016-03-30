@@ -3,7 +3,6 @@
 #
 # Author: Igor
 
-import os
 import time
 
 import numpy as np
@@ -90,12 +89,12 @@ class LanguageLSTM():
         self._session = session
         self._is_traing = is_training
 
-        self._initial_state = None
-        self._lr = None
-        self._train_op = None
-        self._final_state = None
-        self._cost = None
-        self.summary_writer = None
+        # self._initial_state = None
+        # self._lr = None
+        # self._train_op = None
+        # self._final_state = None
+        # self._cost = None
+        # self.summary_writer = None
 
     def inference(self):
         '''
@@ -167,7 +166,7 @@ class LanguageLSTM():
         grads, _ = tf.clip_by_global_norm(tf.gradients(cost, tvars),
                                           self._config.max_grad_norm)
         optimizer = tf.train.GradientDescentOptimizer(self._lr)  # 梯度下降
-        self._train_op = train_op = optimizer.apply_gradients(zip(grads, tvars))  # 更新
+        self._train_op  = train_op = optimizer.apply_gradients(zip(grads, tvars))  # 更新
 
         return train_op
 
@@ -199,9 +198,9 @@ class LanguageLSTM():
                       (step * 1.0 / epoch_size, np.exp(costs / iters),
                        iters * self._config.batch_size / (time.time() - start_time)))
 
-                # print("Summary Wrtier")
-                # summary_str = self._session.run(summary_op, feed_dict=feed_dict)
-                # self.summary_writer.add_summary(summary_str, step)
+                print("Summary Wrtier")
+                summary_str = self._session.run(summary_op, feed_dict=feed_dict)
+                self.summary_writer.add_summary(summary_str, step)
 
         return np.exp(costs / iters)
 
@@ -232,7 +231,7 @@ class LanguageLSTM():
 
             summary_op = tf.merge_all_summaries()
 
-            # saver = tf.train.Saver()
+            saver = tf.train.Saver()
 
             self.summary_writer = tf.train.SummaryWriter(FLAGS.data_path,
                                                          graph_def=self._session.graph_def)
@@ -244,6 +243,8 @@ class LanguageLSTM():
                 print("Epoch: %d Learning rate: %.3f" % (i + 1,
                                                          self._session.run(self.lr)))
                 train_perplexity = self.run_epoch(data, reader, summary_op, verbose=True)
+
+
 
     def load(self):
         '''
@@ -283,7 +284,7 @@ class LanguageLSTM():
 if __name__ == '__main__':
     from TensorFlow.lstm import reader
 
-    train = reader.ptb_raw_data('data/')[0]
+    train = reader.read_data('data/')[0]
     config = Options()
     session = tf.Session()
 

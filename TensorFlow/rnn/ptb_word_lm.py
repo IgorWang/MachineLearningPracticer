@@ -32,6 +32,7 @@ The hyperparameters used in the model:
 """
 
 import time
+import os
 
 import numpy as np
 import tensorflow as tf
@@ -44,7 +45,7 @@ logging = tf.logging
 flags.DEFINE_string(
     "model", "small",
     "A type of model. Possible options are: small, medium, large.")
-flags.DEFINE_string("data_path", None, "data_path")
+flags.DEFINE_string("data_path", 'data/', "data_path")
 
 FLAGS = flags.FLAGS
 
@@ -114,6 +115,7 @@ class PTBModel(object):
             [tf.reshape(self._targets, [-1])],
             [tf.ones([batch_size * num_steps])])
         self._cost = cost = tf.reduce_sum(loss) / batch_size
+        cost_sum = tf.scalar_summary('cost', cost)
         self._final_state = state
 
         if not is_training:
@@ -164,7 +166,7 @@ class SmallConfig(object):
     learning_rate = 1.0
     max_grad_norm = 5
     num_layers = 2
-    num_steps = 20
+    num_steps = 10
     hidden_size = 200
     max_epoch = 4
     max_max_epoch = 13
@@ -222,7 +224,7 @@ class MyConfig(object):
     vocab_size = 10000
 
 
-def run_epoch(session, m, data, eval_op, verbose=False):
+def run_epoch(session, m, data, eval_op, summary_writer, summary_op, verbose=False):
     """Runs the model on the given data."""
     epoch_size = ((len(data) // m.batch_size) - 1) // m.num_steps
     start_time = time.time()
@@ -231,7 +233,8 @@ def run_epoch(session, m, data, eval_op, verbose=False):
     state = m.initial_state.eval()
     for step, (x, y) in enumerate(reader.ptb_iterator(data, m.batch_size,
                                                       m.num_steps)):
-        cost, state, _ = session.run([m.cost, m.final_state,    eval_op],
+        feed_dict = {m.input_data: x, m.targets: y, m.initial_state: state}
+        cost, state, _ = session.run([m.cost, m.final_state, eval_op],
                                      {m.input_data: x,
                                       m.targets: y,
                                       m.initial_state: state})
@@ -242,6 +245,8 @@ def run_epoch(session, m, data, eval_op, verbose=False):
             print("%.3f perplexity: %.3f speed: %.0f wps" %
                   (step * 1.0 / epoch_size, np.exp(costs / iters),
                    iters * m.batch_size / (time.time() - start_time)))
+            summary_str = session.run(summary_op, feed_dict=feed_dict)
+            summary_writer.add_summary(summary_str, step)
 
     return np.exp(costs / iters)
 
@@ -281,21 +286,40 @@ def main(_):
         #     mvalid = PTBModel(is_training=False, config=config)
         #     mMy = PTBModel(is_training=False, config=eval_config)
 
+        summary_op = tf.merge_all_summaries()
+
+        saver = tf.train.Saver(tf.all_variables())
+
         tf.initialize_all_variables().run()
+
+        summary_writer = tf.train.SummaryWriter(FLAGS.data_path,
+                                                graph_def=session.graph_def)
 
         for i in range(config.max_max_epoch):
             lr_decay = config.lr_decay ** max(i - config.max_epoch, 0.0)
             m.assign_lr(session, config.learning_rate * lr_decay)
 
             print("Epoch: %d Learning rate: %.3f" % (i + 1, session.run(m.lr)))
-            train_perplexity = run_epoch(session, m, train_data, m.train_op,
+            train_perplexity = run_epoch(session,
+                                         m,
+                                         train_data,
+                                         m.train_op,
+                                         summary_writer,
+                                         summary_op,
                                          verbose=True)
+
             # print("Epoch: %d Train Perplexity: %.3f" % (i + 1, train_perplexity))
             # valid_perplexity = run_epoch(session, mvalid, valid_data, tf.no_op())
             # print("Epoch: %d Valid Perplexity: %.3f" % (i + 1, valid_perplexity))
             #
             # My_perplexity = run_epoch(session, mMy, My_data, tf.no_op())
             # print("My Perplexity: %.3f" % My_perplexity)
+            if i % 20 == 0:
+                print('Now perplexity %.3f' % (train_perplexity))
+                print("SAVEING:")
+                checkpoint_path = os.path.join(FLAGS.data_path, 'model.ckpt')
+                saver.save(sess=session, save_path=checkpoint_path, global_step=i)
+                print("save model to {}".format(checkpoint_path))
 
 
 if __name__ == "__main__":

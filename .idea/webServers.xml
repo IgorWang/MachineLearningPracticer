@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="fdc0e90d-7444-4ddb-940a-429d69c7f001" name="aegis" url="http://192.168.199.123">
+        <fileTransfer host="192.168.199.123" port="22" rootFolder="/home/aegis" accessType="SFTP" username="aegis">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" />
+          </advancedOptions>
+          <option name="port" value="22" />
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>
