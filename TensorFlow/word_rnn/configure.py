@@ -20,9 +20,9 @@ flags.DEFINE_float('num_steps', 10,
                    'the number of unrolled steps of LSTM')
 flags.DEFINE_float('hidden_size', 200,
                    'the number of LSTM units')
-flags.DEFINE_float('max_epoch', 10,
+flags.DEFINE_float('max_epoch', 15,
                    'the number of epochs trained with the initial learning rate')
-flags.DEFINE_float('max_max_epoch', 50,
+flags.DEFINE_float('max_max_epoch', 60,
                    'the total number of epochs for training')
 flags.DEFINE_float('keep_prob', 1.0,
                    'the probability of keeping weights in the dropout layer')

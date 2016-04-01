@@ -45,14 +45,12 @@ class WordRNN(object):
                                       [config.batch_size, config.num_steps],
                                       name="target_words")
 
-        logits = self.inference()
+        self.logits, self.final_state = self.inference()
 
         if not is_training:
-            self.config.batch_size = 1
-            self.config.num_steps = 1
             return
 
-        loss = self.loss(logits)
+        loss = self.loss(self.logits)
         self.optimize(loss)
 
     def inference(self):
@@ -91,9 +89,7 @@ class WordRNN(object):
                                         [config.vocab_size])
             logits = tf.matmul(output, softmax_w) + softmax_b
 
-        self.final_state = state
-
-        return logits
+        return logits, state
 
     def loss(self, logits):
         loss = tf.nn.seq2seq.sequence_loss_by_example(  # 损失
@@ -116,7 +112,7 @@ class WordRNN(object):
         grads, _ = tf.clip_by_global_norm(tf.gradients(cost, tvars),
                                           self.config.max_grad_norm)
 
-        tf.scalar_summary("gradients", grads)
+        # tf.histogram_summary("gradients", grads)
 
         optimizer = tf.train.GradientDescentOptimizer(self.lr)  # 梯度下降
         self.train_op = optimizer.apply_gradients(zip(grads, tvars))  # 更新
@@ -142,7 +138,7 @@ class WordRNN(object):
             iters += self.config.num_steps
 
             if verbose and step % (epoch_size // 10) == 10:
-                print("%.3f perplexity ; %.3f speed ; %.0f wps " % (
+                print("%.3f ; perplexity : %.3f speed : %.2f wps " % (
                     step * 1.0 / epoch_size,
                     np.exp(costs / iters),
                     time.time() - start_time))
@@ -153,7 +149,7 @@ class WordRNN(object):
         return np.exp(costs / iters)
 
     @classmethod
-    def train(self, config, reader, verbose=False):
+    def train(cls, config, reader, verbose=False):
         '''
         :reader 数据读取器
         '''
@@ -161,39 +157,94 @@ class WordRNN(object):
         if not FLAGS.data_path:
             raise ValueError("Must set --data_path to WordRNN model")
 
-        raw_data = reader.read_data()
-
-        with tf.Graph.as_default(), tf.Session() as session:
+        raw_data, _ = reader.read_data(FLAGS.data_path)
+        with tf.Graph().as_default(), tf.Session() as session:
             initializer = tf.random_uniform_initializer(-config.init_scale,
                                                         config.init_scale)
 
             with tf.variable_scope("model", reuse=None, initializer=initializer):
                 # 初始化模型
-                self.__init__(config, is_training=True)
+                model = cls(config, is_training=True)
 
-            self.summary_op = tf.merge_all_summaries()
+            cls.summary_op = tf.merge_all_summaries()
 
-            self.saver = tf.train.Saver(tf.all_variables())
+            cls.saver = tf.train.Saver(tf.trainable_variables())
 
-            self.summary_writer = tf.train.SummaryWriter(FLAGS.data_path,
-                                                         graph_def=session.graph_def)
+            cls.summary_writer = tf.train.SummaryWriter(FLAGS.data_path,
+                                                        graph_def=session.graph_def)
 
+            # 初始化所有变量
             tf.initialize_all_variables().run()
 
             for i in range(config.max_max_epoch):
                 lr_decay = config.lr_decay ** max(i - config.max_epoch, 0.0)
-                self.assign_lr(session, config.learning_rate * lr_decay)
+                model.assign_lr(session, config.learning_rate * lr_decay)
 
                 print("Epoch: %d ; Learning rate %.3f " %
-                      (i + 1, session.run(self.lr)))
+                      (i + 1, session.run(model.lr)))
 
-                epoch_perplexity = self.run_epoch(session, reader, raw_data, verbose=True)
+                epoch_perplexity = model.run_epoch(session, reader, raw_data, verbose=True)
 
-                if verbose and i % (config.max_max_epoch // 10) == 10:
+                if verbose and (i % (config.max_max_epoch // 10) == 0 or i == config.max_max_epoch - 1):
                     print("%.3f finish ; perplexity %.3f"
                           % (i / config.max_max_epoch, epoch_perplexity))
                     chechkpoint_path = os.path.join(FLAGS.data_path, "model.ckpt")
-                    self.saver.save(sess=session, save_path=chechkpoint_path, global_step=i)
+                    model.saver.save(sess=session, save_path=chechkpoint_path, global_step=i)
                     print("save model to {}".format(chechkpoint_path))
+        return model
 
-    
+    @classmethod
+    def load(cls, config, model_path):
+        '''
+        载入模型
+        '''
+        initializer = tf.random_uniform_initializer(-config.init_scale,
+                                                    config.init_scale)
+        with tf.variable_scope("model", reuse=None, initializer=initializer):
+            model = cls(config, is_training=False)
+        model.sess = tf.Session()
+
+        saver = tf.train.Saver(tf.trainable_variables())
+        ckpt = tf.train.get_checkpoint_state(model_path)
+        if ckpt and ckpt.model_checkpoint_path:
+            print("Read model from %s" % ckpt.model_checkpoint_path)
+            saver.restore(model.sess, ckpt.model_checkpoint_path)
+            print("Model loaded")
+        else:
+            print("No checkpoint file found")
+        return model
+
+    def predict(self, x):
+        # session = tf.Session()
+        # tf.initialize_all_variables().run(session=session)
+
+        state = self.initial_state.eval(session=self.sess)
+        feed_dict = {self.input_data: x, self.initial_state: state}
+        logits, final_state = self.sess.run([self.logits, self.final_state], feed_dict)
+
+        probs = tf.nn.softmax(logits)
+        predict_result = tf.arg_max(probs, dimension=1)
+
+        predict_result = self.sess.run(predict_result)
+
+        return predict_result
+
+
+if __name__ == '__main__':
+    from TensorFlow.word_rnn import reader
+
+    FLAGS.data_path = os.path.join(os.path.dirname(__file__), 'data')
+    config = Options()
+    config.batch_size = 1
+    # model = WordRNN.train(config, reader, verbose=True)
+    model = WordRNN.load(config, 'data/')
+    data, word2id = reader.read_data(FLAGS.data_path)
+    id2word = {v: k for k, v in word2id.items()}
+    epoch = 0
+
+    for i, (x, y) in enumerate(reader.iterator(data, config.batch_size, config.num_steps)):
+        print("x",list(map(lambda x: id2word[x], x[0])))
+        pred = model.predict(x)
+        print("predict",list(map(lambda x: id2word[x], pred)))
+        if i > 30:
+            break

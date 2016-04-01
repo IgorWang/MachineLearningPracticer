@@ -3,7 +3,7 @@
   <component name="WebServers">
     <option name="servers">
       <webServer id="fdc0e90d-7444-4ddb-940a-429d69c7f001" name="aegis" url="http://192.168.199.123">
-        <fileTransfer host="192.168.199.123" port="22" rootFolder="/home/aegis" accessType="SFTP" username="aegis">
+        <fileTransfer host="192.168.199.123" port="22" rootFolder="/home/aegis" accessType="SFTP" password="df9bdf98df99df9e" username="aegis">
           <advancedOptions>
             <advancedOptions dataProtectionLevel="Private" />
           </advancedOptions>

@@ -45,7 +45,7 @@ def ptb_raw_data(data_path=None):
     :return: tuple(train_data,valid_data,test_data,vocabulary)
     '''
 
-    train_path = os.path.join(data_path, 'ptb.train.txt')
+    train_path = os.path.join(data_path, 'train.txt')
     valid_path = os.path.join(data_path, 'ptb.valid.txt')
     test_path = os.path.join(data_path, 'ptb.test.txt')
 
