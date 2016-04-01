@@ -18,6 +18,7 @@ class WordRNN(object):
     '''
 
     def __init__(self, config, is_training):
+
         self.config = config
         self.is_training = is_training
 
@@ -235,16 +236,22 @@ if __name__ == '__main__':
 
     FLAGS.data_path = os.path.join(os.path.dirname(__file__), 'data')
     config = Options()
-    config.batch_size = 1
+
     # model = WordRNN.train(config, reader, verbose=True)
+
+    # _______________________________________
+
+    # predict
+    config.batch_size = 1
     model = WordRNN.load(config, 'data/')
+
     data, word2id = reader.read_data(FLAGS.data_path)
     id2word = {v: k for k, v in word2id.items()}
     epoch = 0
 
     for i, (x, y) in enumerate(reader.iterator(data, config.batch_size, config.num_steps)):
-        print("x",list(map(lambda x: id2word[x], x[0])))
+        print("x", list(map(lambda x: id2word[x], x[0])))
         pred = model.predict(x)
-        print("predict",list(map(lambda x: id2word[x], pred)))
+        print("predict", list(map(lambda x: id2word[x], pred)))
         if i > 30:
             break
