@@ -236,12 +236,14 @@ if __name__ == '__main__':
 
     FLAGS.data_path = os.path.join(os.path.dirname(__file__), 'data')
     config = Options()
-
+    data, word2id = reader.read_data(FLAGS.data_path)
+    config.vocab_size = len(word2id)
+    print(len(word2id))
     # model = WordRNN.train(config, reader, verbose=True)
 
     # _______________________________________
 
-    # predict
+    #predict
     config.batch_size = 1
     model = WordRNN.load(config, 'data/')
 
@@ -250,8 +252,11 @@ if __name__ == '__main__':
     epoch = 0
 
     for i, (x, y) in enumerate(reader.iterator(data, config.batch_size, config.num_steps)):
-        print("x", list(map(lambda x: id2word[x], x[0])))
-        pred = model.predict(x)
-        print("predict", list(map(lambda x: id2word[x], pred)))
         if i > 30:
-            break
+            print("x      :", list(map(lambda x: id2word[x], x[0])))
+            pred = model.predict(x)
+            print("predict:", list(map(lambda x: id2word[x], pred)))
+            if i > 60:
+                break
+
+

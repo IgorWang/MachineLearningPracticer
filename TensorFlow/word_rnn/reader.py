@@ -86,7 +86,8 @@ def iterator(raw_data, batch_size, num_steps):
 
 if __name__ == '__main__':
     path = 'data/'
-    t, length = read_data(path)
+    t, word2id = read_data(path)
+    # print(word2id['<END>'])
     # print(length)
-    for i in iterator(t,5,10):
-        print(i)
+    # for i in iterator(t,5,10):
+    #     print(i)
