@@ -166,7 +166,7 @@ class LanguageLSTM():
         grads, _ = tf.clip_by_global_norm(tf.gradients(cost, tvars),
                                           self._config.max_grad_norm)
         optimizer = tf.train.GradientDescentOptimizer(self._lr)  # 梯度下降
-        self._train_op  = train_op = optimizer.apply_gradients(zip(grads, tvars))  # 更新
+        self._train_op = train_op = optimizer.apply_gradients(zip(grads, tvars))  # 更新
 
         return train_op
 
@@ -231,7 +231,7 @@ class LanguageLSTM():
 
             summary_op = tf.merge_all_summaries()
 
-            saver = tf.train.Saver()
+            # saver = tf.train.Saver()
 
             self.summary_writer = tf.train.SummaryWriter(FLAGS.data_path,
                                                          graph_def=self._session.graph_def)
@@ -243,8 +243,6 @@ class LanguageLSTM():
                 print("Epoch: %d Learning rate: %.3f" % (i + 1,
                                                          self._session.run(self.lr)))
                 train_perplexity = self.run_epoch(data, reader, summary_op, verbose=True)
-
-
 
     def load(self):
         '''
@@ -282,11 +280,11 @@ class LanguageLSTM():
 
 
 if __name__ == '__main__':
-    from TensorFlow.lstm import reader
+    from TensorFlow.char_rnn import test
 
-    train = reader.read_data('data/')[0]
+    train = test.ptb_raw_data('data/')[0]
     config = Options()
     session = tf.Session()
 
     lstm = LanguageLSTM(config, session, True)
-    lstm.train(data=train, reader=reader)
+    lstm.train(data=train, reader=test)
