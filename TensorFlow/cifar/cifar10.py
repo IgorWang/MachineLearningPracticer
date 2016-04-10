@@ -39,7 +39,7 @@ TOWER_NAME = 'tower'
 DATA_URL = 'http://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz'
 
 
-def distored_inputs():
+def distorted_inputs():
     '''
     利用Reader ops为训练构建CIFAR数据集的输入
     :return:
@@ -49,7 +49,7 @@ def distored_inputs():
     if not FLAGS.data_dir:
         raise ValueError('Please supply a data_dir')
     data_dir = os.path.join(FLAGS.data_dir, 'cifar-10-batches-bin')
-    return cifar10_input.distored_inputs(data_dir, FLAGS.batch_size)
+    return cifar10_input.distorted_inputs(data_dir, FLAGS.batch_size)
 
 
 def inputs(eval_data):
@@ -203,7 +203,7 @@ def inference(images):
         biases = _variable_on_cpu('biases', [NUM_CLASS],
                                   initializer=tf.constant_initializer(0.0))
         # softmax(WX+b)
-        softmax_linear = tf.add(tf.matmul(local4, weights), biases, name=scope)
+        softmax_linear = tf.add(tf.matmul(local4, weights), biases, name=scope.name)
         _activation_summary(softmax_linear)
 
     return softmax_linear

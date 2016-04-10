@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-#  
+#
 #
 # Author: Igor
 
@@ -59,7 +59,7 @@ def read_cifar10(filename_queue):
 
     # 取出图像
     depth_major = tf.reshape(tf.slice(record_bytes, [label_bytes], [image_bytes]),
-                             [result.depth, result.height, result.depth])
+                             [result.depth, result.height, result.width])
     # 从[depth,height,width] 转置为 [height,width,depth]
     result.uint8image = tf.transpose(depth_major, [1, 2, 0])
 
@@ -96,7 +96,7 @@ def _generate_image_and_label_batch(image, label, min_queue_examples,
     return images, tf.reshape(label_batch, [batch_size])
 
 
-def distored_inputs(data_dir, batch_size):
+def distorted_inputs(data_dir, batch_size):
     '''
     为CIFAR模型训练提供无序输入
     利用Reader ops
