@@ -15,24 +15,38 @@ def _read_words(filename):
         return f.read().split()
 
 
+def _replace_UNK(token, frequency):
+    if frequency[token] < 5:
+        return "UNK"
+    else:
+        return token
+
+
+def _read_data(filename):
+    data = _read_words(filename)
+    frequency = collections.defaultdict(int)
+    for token in data:
+        frequency[token] += 1
+    data = list(map(lambda x: _replace_UNK(x, frequency), data))
+    return data
+
+
 def _build_vocab(filename):
     '''
     构建词典
     :param filename:
     :return:
     '''
-    data = _read_words(filename)
+    data = _read_data(filename)
     counter = collections.Counter(data)
     counter_pairs = sorted(counter.items(), key=lambda x: (-x[1], x[0]))
-
     words, _ = list(zip(*counter_pairs))
     word_to_id = dict(zip(words, range(len(words))))
-
     return word_to_id
 
 
 def _file_to_word_ids(filename, word_to_id):
-    data = _read_words(filename)
+    data = _read_data(filename)
     return [word_to_id[word] for word in data]
 
 
@@ -87,6 +101,9 @@ def iterator(raw_data, batch_size, num_steps):
 if __name__ == '__main__':
     path = 'data/'
     t, word2id = read_data(path)
+    # print(t)
+    # print(word2id['UNK'])
+
     # print(word2id['<END>'])
     # print(length)
     # for i in iterator(t,5,10):

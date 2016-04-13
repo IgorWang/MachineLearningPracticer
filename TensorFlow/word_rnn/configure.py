@@ -22,7 +22,7 @@ flags.DEFINE_float('hidden_size', 200,
                    'the number of LSTM units')
 flags.DEFINE_float('max_epoch', 15,
                    'the number of epochs trained with the initial learning rate')
-flags.DEFINE_float('max_max_epoch', 60,
+flags.DEFINE_float('max_max_epoch', 50,
                    'the total number of epochs for training')
 flags.DEFINE_float('keep_prob', 1.0,
                    'the probability of keeping weights in the dropout layer')
@@ -40,6 +40,7 @@ flags.DEFINE_integer('checkpoint_interval', 600,
                      "Checkpoint the model (i.e. save the parameters) every n "
                      "seconds (rounded up to statistics interval.")
 flags.DEFINE_string('data_path', 'data/', 'data directory')
+flags.DEFINE_string('save_path', 'data/model', 'save directory')
 
 FLAGS = flags.FLAGS
 

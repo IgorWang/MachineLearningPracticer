@@ -189,7 +189,7 @@ class WordRNN(object):
                 if verbose and (i % (config.max_max_epoch // 10) == 0 or i == config.max_max_epoch - 1):
                     print("%.3f finish ; perplexity %.3f"
                           % (i / config.max_max_epoch, epoch_perplexity))
-                    chechkpoint_path = os.path.join(FLAGS.data_path, "model.ckpt")
+                    chechkpoint_path = os.path.join(FLAGS.save_path, "model.ckpt")
                     model.saver.save(sess=session, save_path=chechkpoint_path, global_step=i)
                     print("save model to {}".format(chechkpoint_path))
         return model
@@ -235,28 +235,27 @@ if __name__ == '__main__':
     from TensorFlow.word_rnn import reader
 
     FLAGS.data_path = os.path.join(os.path.dirname(__file__), 'data')
+    FLAGS.save_path = os.path.join(os.path.dirname(__file__), 'data/model')
     config = Options()
-    data, word2id = reader.read_data(FLAGS.data_path)
-    config.vocab_size = len(word2id)
-    print(len(word2id))
+    # data, word2id = reader.read_data(FLAGS.data_path)
+    # config.vocab_size = len(word2id)
+    # print(len(word2id))
     # model = WordRNN.train(config, reader, verbose=True)
 
     # _______________________________________
 
-    #predict
+    # predict
     config.batch_size = 1
-    model = WordRNN.load(config, 'data/')
-
     data, word2id = reader.read_data(FLAGS.data_path)
+    config.vocab_size = len(word2id)
     id2word = {v: k for k, v in word2id.items()}
+    model = WordRNN.load(config, 'data/model/')
     epoch = 0
 
     for i, (x, y) in enumerate(reader.iterator(data, config.batch_size, config.num_steps)):
-        if i > 30:
+        if i > 50:
             print("x      :", list(map(lambda x: id2word[x], x[0])))
             pred = model.predict(x)
             print("predict:", list(map(lambda x: id2word[x], pred)))
-            if i > 60:
+            if i > 70:
                 break
-
-

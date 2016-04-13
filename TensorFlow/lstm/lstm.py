@@ -280,11 +280,12 @@ class LanguageLSTM():
 
 
 if __name__ == '__main__':
-    from TensorFlow.char_rnn import test
-
-    train = test.ptb_raw_data('data/')[0]
-    config = Options()
-    session = tf.Session()
-
-    lstm = LanguageLSTM(config, session, True)
-    lstm.train(data=train, reader=test)
+    # from TensorFlow.word_rnn import reader
+    #
+    # train = test.ptb_raw_data('data/')[0]
+    # config = Options()
+    # session = tf.Session()
+    #
+    # lstm = LanguageLSTM(config, session, True)
+    # lstm.train(data=train, reader=test)
+    pass
