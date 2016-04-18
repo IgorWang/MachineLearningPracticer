@@ -118,17 +118,19 @@ def save_to_csv(data, filename):
     '''
     if not os.path.exists(filename):
         raise FileExistsError("%s don't exists" % filename)
-    np.savetxt(filename, data, fmt='%d', delimiter='\t')
+    np.savetxt(filename, data, fmt='%d', delimiter=',')
     print("save to %s " % filename)
 
 
 def main():
-    x, y, _, _ = load_data()
+    x, y, word2id, _ = load_data()
+    print(len(word2id))
     csv_file = os.path.join(TRAIN_PATH, 'train.txt')
     data = np.concatenate([x, y], axis=1)
     np.random.shuffle(data)
+    print(data.shape)
     save_to_csv(data, csv_file)
 
 
 if __name__ == '__main__':
-    pass
+    main()

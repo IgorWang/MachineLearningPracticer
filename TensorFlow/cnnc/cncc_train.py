@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-#  CIFAR-10训练 单个GPU
+#  
 #
 # Author: Igor
 
@@ -10,36 +10,34 @@ import time
 import numpy as np
 import tensorflow as tf
 
-from TensorFlow.cifar import cifar10
+from TensorFlow.cnnc import cnnc
+from TensorFlow.cnnc import TRAIN_PATH
 
 FLAGS = tf.app.flags.FLAGS
 
-tf.app.flags.DEFINE_string('train_dir', 'data/cifar10_train',
-                           'Directory where to wirte envent logs'
-                           'and checkpoint')
-tf.app.flags.DEFINE_integer('max_steps', 10000, 'Number of batches to run')
-
+tf.app.flags.DEFINE_string('train_dir', TRAIN_PATH,
+                           'directory where to write envent log and'
+                           'checkpoint')
+tf.app.flags.DEFINE_integer('max_steps', 20000,
+                            'Number of batches to run')
 tf.app.flags.DEFINE_boolean('log_device_placement', False,
                             'Where to log device placement.')
 
 
 def train():
     '''
-    训练 CIFAR-10
+    训练 cnnc 模型
     '''
     with tf.Graph().as_default():
         global_step = tf.Variable(0, trainable=False)
 
-        # Get images and labels for CIFAR-10
-        images, labels = cifar10.distorted_inputs()
+        features, labels = cnnc.distorted_inputs(FLAGS.train_dir)
 
-        # 构建inference图
-        logits = cifar10.inference(images)
+        logits = cnnc.inference(features)
 
-        loss = cifar10.loss(logits, labels)
+        loss = cnnc.loss(logits, labels)
 
-        # 构建训练图
-        train_op = cifar10.train(loss, global_step)
+        train_op = cnnc.train(loss, global_step)
 
         # saver
         saver = tf.train.Saver(tf.all_variables())
@@ -82,6 +80,7 @@ def train():
             if step % 1000 == 0 or (step + 1) == FLAGS.max_steps:
                 checkpoint_path = os.path.join(FLAGS.train_dir, "model.ckpt")
                 saver.save(sess, checkpoint_path, global_step=step)
+
 
 
 if __name__ == '__main__':
