@@ -125,7 +125,7 @@ def save_to_csv(data, filename):
 def main():
     x, y, word2id, _ = load_data()
     print(len(word2id))
-    csv_file = os.path.join(TRAIN_PATH, 'train.txt')
+    csv_file = os.path.join(TRAIN_PATH, 'train1.txt')
     data = np.concatenate([x, y], axis=1)
     np.random.shuffle(data)
     print(data.shape)

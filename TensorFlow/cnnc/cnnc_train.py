@@ -18,7 +18,7 @@ FLAGS = tf.app.flags.FLAGS
 tf.app.flags.DEFINE_string('train_dir', TRAIN_PATH,
                            'directory where to write envent log and'
                            'checkpoint')
-tf.app.flags.DEFINE_integer('max_steps', 20000,
+tf.app.flags.DEFINE_integer('max_steps', 2000,
                             'Number of batches to run')
 tf.app.flags.DEFINE_boolean('log_device_placement', False,
                             'Where to log device placement.')
@@ -31,7 +31,9 @@ def train():
     with tf.Graph().as_default():
         global_step = tf.Variable(0, trainable=False)
 
+        # 传入数据所在的文件夹
         features, labels = cnnc.distorted_inputs(FLAGS.train_dir)
+
 
         logits = cnnc.inference(features)
 
@@ -80,7 +82,6 @@ def train():
             if step % 1000 == 0 or (step + 1) == FLAGS.max_steps:
                 checkpoint_path = os.path.join(FLAGS.train_dir, "model.ckpt")
                 saver.save(sess, checkpoint_path, global_step=step)
-
 
 
 if __name__ == '__main__':

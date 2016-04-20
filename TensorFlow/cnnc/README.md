@@ -29,3 +29,16 @@ filenames = ['data/train/train.txt']
 ```
 
 3 模型构建
+运行cncc_train.python脚本
+
+4 模型预测
+import pandas as pd
+
+filenames = os.path.join('data/train/train.txt')
+
+data = pd.read_csv(filenames, sep=',', header=None)
+x = data.iloc[0:, 0:cnnc.SEQUENCE_LENGTH].values
+y = data.iloc[0:, cnnc.SEQUENCE_LENGTH:].values
+
+result = evaluate(x, y)
+print(result[1])

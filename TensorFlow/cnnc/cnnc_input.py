@@ -7,7 +7,7 @@ import os
 import tensorflow as tf
 
 SEQUENCE_LENGTH = 58
-NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 1000
+NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 10000
 
 
 def read_data(filename_queue):
@@ -47,7 +47,7 @@ def _generate_features_and_labels_batch(feature, label, min_queue_examples, batc
         features:2-D [batch_size,SEQUENCE_LENGTH]
         labels:2-D [batch_size,2]
     '''
-    num_preprocess_threads = 1
+    num_preprocess_threads = 10
     if shuffle:
         features, label_batch = tf.train.shuffle_batch(
             [feature, label],
@@ -96,19 +96,9 @@ def distorted_inputs(filenames, batch_size):
 
 
 if __name__ == '__main__':
-    filenames = ['data/train/train.txt']
-    input_data = distorted_inputs(filenames, 128)
+    filenames = [os.path.join('data/train/train.txt')]
+    images, labels = distorted_inputs(filenames, batch_size=128)
     with tf.Session() as sess:
-        coord = tf.train.Coordinator()
-        threads = tf.train.start_queue_runners(coord=coord)
-
-        for i in range(10000):
-            features, lables = sess.run([input_data[0],
-                                         input_data[1]])
-            print(features)
-            print(lables)
-        print(features.shape)
-        print(lables.shape)
-
-        coord.request_stop()
-        coord.join(threads)
+        threads = tf.train.start_queue_runners()
+        x = sess.run([images])
+        print(x)

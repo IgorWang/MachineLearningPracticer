@@ -16,7 +16,7 @@ SEQUENCE_LENGTH = cnnc_input.SEQUENCE_LENGTH
 FLAGS = tf.app.flags.FLAGS
 
 # 模型参数
-tf.app.flags.DEFINE_integer('batch_size', 1,
+tf.app.flags.DEFINE_integer('batch_size', 128,
                             'number of text to process in a batch')
 tf.app.flags.DEFINE_integer('vocab_size', 20267,
                             'number of words in datasets')
@@ -30,19 +30,19 @@ TOWER_NAME = 'tower'
 
 # 卷积参数
 # 过滤器的大小
-FILTER_SIZES = [2, 3, 4, 5, 6, 7]
+FILTER_SIZES = [2, 3, 4, 5, 6, 7, 8, 9, 10]
 # 过滤器的数量
-NUM_FILTERS = 20
+NUM_FILTERS = 50
 
 # 训练过程的全局常量
 MOVING_AVERAGE_DECAY = 0.9999  # 移动平均衰减
 NUM_EPOCHS_PER_DECAY = 350.0  # 当学习速率开始下降的(期数)Epochs
 LEARNING_RATE_DECAY_FACTOR = 0.1  # 学习速率衰减因子
-INITIAL_LEARNING_RATE = 0.1  # 初始化学习速率
+INITIAL_LEARNING_RATE = 0.8  # 初始化学习速率
 
 
 def distorted_inputs(data_dir):
-    filenames = os.listdir(data_dir)
+    filenames = [os.path.join(data_dir, i) for i in os.listdir(data_dir) if re.match('train*', i)]
     return cnnc_input.distorted_inputs(filenames, FLAGS.batch_size)
 
 
@@ -116,61 +116,75 @@ def inference(features, embedding=None, train_embedding=True):
     '''
 
     # Embedding layer
-    with tf.device('/cpu:0'), tf.variable_scope('embedding'):
+    with tf.variable_scope('embedding_layer') as scope:
         if embedding:
             initializer = tf.constant_initializer(embedding)
+            embedding = tf.get_variable('embedding', shape=[FLAGS.vocab_size, FLAGS.embedding_size],
+                                        initializer=initializer, trainable=train_embedding)
         else:
             initializer = tf.random_uniform([FLAGS.vocab_size, FLAGS.embedding_size], -1.0, 1.0)
-        embedding = tf.get_variable('embedding',
-                                    initializer=initializer, trainable=train_embedding)
+            embedding = _variable_on_cpu('embedding', shape=None,
+                                         initializer=initializer)
         text_embeding = tf.nn.embedding_lookup(embedding, features)
         # 4-D Tensor[batch_size,SEQUENCE_LENGTH,embedding_size,1]
-        text_embeding = tf.expand_dims(text_embeding, -1)
+        text_embeding_expanded = tf.expand_dims(text_embeding, -1)
         # TensorFlow’s convolutional conv2d operation
         # expects a 4-dimensional tensor with dimensions
         # corresponding to batch, width, height and channel.
 
     # 为不同过滤器大小创建卷积+maxpool层
     pooled_outputs = []
-    for i, filter_size in enumerate(FILTER_SIZES):
-        with tf.variable_scope('conv-maxpool-%s' % filter_size) as scope:
-            # convolution Layers
-            # filter Tensor [filter_height, filter_width, in_channels, out_channels]
-            filter_shape = [filter_size, FLAGS.embedding_size, 1, NUM_FILTERS]
-            kernel = _variable_with_weight_decay('weights',
-                                                 shape=filter_shape,
-                                                 stddev=1e-4, wd=0.0)
-            biases = _variable_on_cpu('biases', shape=[NUM_FILTERS],
-                                      initializer=tf.constant_initializer(0.0))
-            conv = tf.nn.conv2d(text_embeding, kernel, [1, 1, 1, 1],
-                                padding='VALID')
-            bias = tf.nn.bias_add(conv, biases)
-            conv1 = tf.nn.relu(bias, name=scope.name)
-            _activation_summary(conv1)
+    with tf.name_scope("CNN"):
+        for i, filter_size in enumerate(FILTER_SIZES):
+            with tf.variable_scope('conv-maxpool-%s' % filter_size) as scope:
+                # convolution Layers
+                # filter Tensor [filter_height, filter_width, in_channels, out_channels]
+                filter_shape = [filter_size, FLAGS.embedding_size, 1, NUM_FILTERS]
+                kernel = _variable_with_weight_decay('weights',
+                                                     shape=filter_shape,
+                                                     stddev=1e-4, wd=0.0)
+                biases = _variable_on_cpu('biases', shape=[NUM_FILTERS],
+                                          initializer=tf.constant_initializer(0.0))
+                conv = tf.nn.conv2d(text_embeding_expanded, kernel, [1, 1, 1, 1],
+                                    padding='VALID')
+                bias = tf.nn.bias_add(conv, biases)
+                conv1 = tf.nn.relu(bias, name='conv_relu')
+                _activation_summary(conv1)
 
-            pool = tf.nn.max_pool(conv1,
-                                  ksize=[1, SEQUENCE_LENGTH - filter_size + 1, 1, 1],
-                                  strides=[1, 1, 1, 1],
-                                  padding='VALID',
-                                  name=scope.name)
-            pooled_outputs.append(pool)
+                pooled = tf.nn.max_pool(conv1,
+                                        ksize=[1, SEQUENCE_LENGTH - filter_size + 1, 1, 1],
+                                        strides=[1, 1, 1, 1],
+                                        padding='VALID',
+                                        name='pool')
+                pooled_outputs.append(pooled)
     # 结合所有的pooled features
     num_filters_total = NUM_FILTERS * len(FILTER_SIZES)
-    h_pool = tf.concat(3, pooled_outputs)
-    h_pool_flat = tf.reshape(h_pool, [-1, num_filters_total])
+    h_pool = tf.concat(3, pooled_outputs, name='concated_feature')
+    h_pool_flat = tf.reshape(h_pool, [-1, num_filters_total], name='flated_pool')
+    _activation_summary(h_pool_flat)
 
-    with tf.variable_scope("output") as scope:
+    with tf.variable_scope("local1") as scope:
         weights = _variable_with_weight_decay('weights',
-                                              shape=[num_filters_total, FLAGS.num_class],
+                                              shape=[num_filters_total, 200],
                                               stddev=1 / num_filters_total, wd=0.0)
+        bias = _variable_on_cpu('biases', [200],
+                                initializer=tf.constant_initializer(0.0))
+
+        local1 = tf.nn.relu(tf.nn.xw_plus_b(h_pool_flat, weights, bias), name=scope.name)
+        _activation_summary(local1)
+
+    with tf.variable_scope("softmax_linera") as scope:
+        weights = _variable_with_weight_decay("weights",
+                                              shape=[200, FLAGS.num_class],
+                                              stddev=1.0 / 200, wd=0.0)
         bias = _variable_on_cpu('biases', [FLAGS.num_class],
                                 initializer=tf.constant_initializer(0.0))
 
-        logits = tf.add(tf.matmul(h_pool_flat, weights),
-                        bias, name=scope.name)
-        _activation_summary(logits)
+        softmax_linear = tf.nn.xw_plus_b(local1, weights, bias, name=scope.name)
 
-    return logits
+        _activation_summary(softmax_linear)
+
+    return softmax_linear
 
 
 def loss(logits, labels):
