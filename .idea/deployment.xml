@@ -1,8 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" serverName="aegis" promptOnLocalOverwrite="false" showNewOnSourceInSync="false">
+  <component name="PublishConfigData" serverName="aegis (project level)" promptOnLocalOverwrite="false" showNewOnSourceInSync="false">
     <serverData>
       <paths name="aegis">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/igor/MachineLearningPracticer" local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="aegis (project level)">
         <serverdata>
           <mappings>
             <mapping deploy="/igor/MachineLearningPracticer" local="$PROJECT_DIR$" web="/" />
